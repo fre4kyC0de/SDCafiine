@@ -7,7 +7,10 @@
 #include "main.h"
 #include "modpackSelector.h"
 #include "common/common.h"
-
+#include <fat.h>
+#include <iosuhax.h>
+#include <iosuhax_devoptab.h>
+#include <iosuhax_disc_interface.h>
 #include "dynamic_libs/os_functions.h"
 #include "dynamic_libs/vpad_functions.h"
 #include "dynamic_libs/socket_functions.h"
@@ -16,7 +19,7 @@
 #include "patcher/fs_function_patcher.h"
 #include "utils/function_patcher.h"
 #include "kernel/kernel_functions.h"
-#include "utils/FileReplacer.h"
+#include "utils/FileReplacerUtils.h"
 #include "utils/logger.h"
 #include "fs/fs_utils.h"
 #include "fs/sd_fat_devoptab.h"
@@ -24,13 +27,17 @@
 #include "fs/DirList.h"
 #include "common/retain_vars.h"
 #include "system/exception_handler.h"
+#include "system/OSThread.h"
+#include "utils/mcpHook.h"
+#include "utils/StringTools.h"
+
+#include <sys/types.h>
+#include <dirent.h>
 
 u8 isFirstBoot __attribute__((section(".data"))) = 1;
 
 /* Entry point */
-
-extern "C" int Menu_Main(void)
-{
+extern "C" int Menu_Main(void){
     if(gAppStatus == 2){
         //"No, we don't want to patch stuff again.");
         return EXIT_RELAUNCH_ON_LOAD;
@@ -48,47 +55,43 @@ extern "C" int Menu_Main(void)
     InitFSFunctionPointers();
     InitVPadFunctionPointers();
 
-    //we dont need to use a hardcoded ip if we read one from the sd card..
-    if(strlen(ipFromSd) <= 0) {
-        log_init("192.168.1.15");
-    }
+    log_init();
 
     setup_os_exceptions();
 
-    log_printf("Mount fake devo device\n");
-    mount_fake();
+    gSDInitDone = 0;
 
-    log_printf("Mount SD partition\n");
-    Init_SD();
-
-    Init_Log();
+    DEBUG_FUNCTION_LINE("Mount SD partition\n");
+    Init_SD_USB();
 
     SetupKernelCallback();
+    //!*******************************************************************
+    //!                        Patching functions                        *
+    //!*******************************************************************
+    DEBUG_FUNCTION_LINE("Patching functions\n");
+    ApplyPatches();
 
-    memset(&fspatchervars,0,sizeof(fspatchervars));
+    FileReplacerUtils::getInstance()->StartAsyncThread();
+
+    //gLastMetaPath[0] = 0;
 
     //Reset everything when were going back to the Mii Maker
     if(!isFirstBoot && isInMiiMakerHBL()){
-        log_print("Returing to the Homebrew Launcher!\n");
+        DEBUG_FUNCTION_LINE("Returing to the Homebrew Launcher!\n");
         isFirstBoot = 0;
         deInit();
         return EXIT_SUCCESS;
     }
 
-    //!*******************************************************************
-    //!                        Patching functions                        *
-    //!*******************************************************************
-    log_print("Patching functions\n");
-    ApplyPatches();
-
-    HandleMultiModPacks();
-
     if(!isInMiiMakerHBL()){ //Starting the application
+        HandleMultiModPacks(OSGetTitleID());
         return EXIT_RELAUNCH_ON_LOAD;
     }
 
     if(isFirstBoot){ // First boot back to SysMenu
+        DEBUG_FUNCTION_LINE("Loading the System Menu\n");
         isFirstBoot = 0;
+        //OSForceFullRelaunch();
         SYSLaunchMenu();
         return EXIT_RELAUNCH_ON_LOAD;
     }
@@ -115,12 +118,11 @@ void RestorePatches(){
 
 void deInit(){
     RestorePatches();
+    FileReplacerUtils::getInstance()->StopAsyncThread();
+    FileReplacerUtils::destroyInstance();
     log_deinit();
-    unmount_sd_fat("sd");
-    unmount_fake();
-    delete replacer;
-    replacer = NULL;
-    gSDInitDone = 0;
+
+    deInit_SD_USB();
 }
 
 s32 isInMiiMakerHBL(){
@@ -135,46 +137,56 @@ s32 isInMiiMakerHBL(){
     return 0;
 }
 
+void Init_SD_USB() {
+    int res = IOSUHAX_Open(NULL); //This is not working properly..
 
-void Init_SD() {
-    int res = 0;
-    if((res = mount_sd_fat("sd")) >= 0){
-        log_printf("mount_sd_fat success\n");
-        gSDInitDone = 1;
+    deleteDevTabsNames();
+    mount_fake();
+    gSDInitDone |= SDUSB_MOUNTED_FAKE;
+
+    if(res < 0){
+        DEBUG_FUNCTION_LINE("IOSUHAX_open failed\n");
+        if((res = mount_sd_fat("sd")) >= 0){
+            DEBUG_FUNCTION_LINE("mount_sd_fat success\n");
+            gSDInitDone |= SDUSB_MOUNTED_OS_SD;
+        }else{
+            DEBUG_FUNCTION_LINE("mount_sd_fat failed %d\n",res);
+        }
     }else{
-        log_printf("mount_sd_fat failed %d\n",res);
+        DEBUG_FUNCTION_LINE("Using IOSUHAX for SD/USB access\n");
+        if((res = fatInitDefault()) >= 0){
+            DEBUG_FUNCTION_LINE("fatInitDefault success\n");
+            gSDInitDone |= SDUSB_MOUNTED_LIBIOSUHAX;
+        }else{
+            DEBUG_FUNCTION_LINE("fatInitDefault failed %d\n",res);
+        }
     }
+    DEBUG_FUNCTION_LINE("%08X\n",gSDInitDone);
 }
 
-void Init_Log() {
-    if(!hasReadIP) {
-        log_printf("Reading ip from sd card\n");
-        hasReadIP = 1;
-
-        std::string filepath = std::string(SD_PATH) + WIIU_PATH + "/" + IP_TXT;
-
-        CFile file(filepath, CFile::ReadOnly);
-        if (!file.isOpen()){
-            log_printf("File not found: %s\n",filepath.c_str());
-            return;
-        }
-
-        std::string strBuffer;
-        strBuffer.resize(file.size());
-        file.read((u8 *) &strBuffer[0], strBuffer.size());
-
-        if(strBuffer.length() >= sizeof(ipFromSd)){
-            log_printf("Loading ip from sd failed. String was too long: %s\n",strBuffer.c_str());
-            return;
-        }
-        memcpy(ipFromSd,strBuffer.c_str(),strBuffer.length());
-        ipFromSd[strBuffer.length()] = 0;
-
-        log_printf("Successfully read ip from sd! ip is: %s\n",ipFromSd);
-
-        log_init(ipFromSd);
+void deInit_SD_USB(){
+    DEBUG_FUNCTION_LINE("Called this function.\n");
+    if(gSDInitDone & SDUSB_MOUNTED_FAKE){
+        DEBUG_FUNCTION_LINE("Unmounting fake\n");
+        unmount_fake();
+        gSDInitDone &= ~SDUSB_MOUNTED_FAKE;
     }
-    if(strlen(ipFromSd) > 0) {
-        log_init(ipFromSd);
+    if(gSDInitDone & SDUSB_MOUNTED_OS_SD){
+        DEBUG_FUNCTION_LINE("Unmounting OS SD\n");
+        unmount_sd_fat("sd");
+        gSDInitDone &= ~SDUSB_MOUNTED_OS_SD;
     }
+    if(gSDInitDone & SDUSB_MOUNTED_LIBIOSUHAX){
+        DEBUG_FUNCTION_LINE("Unmounting libiosuhax SD and USB\n");
+        fatUnmount("sd");
+        fatUnmount("usb");
+        DEBUG_FUNCTION_LINE("Calling IOSUHAX_Close\n");
+        IOSUHAX_Close();
+        gSDInitDone &= ~SDUSB_MOUNTED_LIBIOSUHAX;
+    }
+    deleteDevTabsNames();
+    if(gSDInitDone != SDUSB_MOUNTED_NONE){
+        DEBUG_FUNCTION_LINE("WARNING. Some devices are still mounted.\n");
+    }
+    DEBUG_FUNCTION_LINE("Function end.\n");
 }

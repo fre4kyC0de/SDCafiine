@@ -21,21 +21,22 @@
  * 3. This notice may not be removed or altered from any source
  * distribution.
  ***************************************************************************/
-#ifndef __SD_FAT_DEVOPTAB_H_
-#define __SD_FAT_DEVOPTAB_H_
+#ifndef __IOSUHAX_DEVOPTAB_H_
+#define __IOSUHAX_DEVOPTAB_H_
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-void deleteDevTabsNames();
-int mount_sd_fat(const char *path);
-int unmount_sd_fat(const char *path);
-int mount_fake();
-int unmount_fake();
+//! virtual name example:   sd or odd (for sd:/ or odd:/ access)
+//! fsaFd:                  fd received by IOSUHAX_FSA_Open();
+//! dev_path:               (optional) if a device should be mounted to the mount_path. If NULL no IOSUHAX_FSA_Mount is not executed.
+//! mount_path:             path to map to virtual device name
+int mount_fs(const char *virt_name, int fsaFd, const char *dev_path, const char *mount_path);
+int unmount_fs(const char *virt_name);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif // __SD_FAT_DEVOPTAB_H_
+#endif // __IOSUHAX_DEVOPTAB_H_
