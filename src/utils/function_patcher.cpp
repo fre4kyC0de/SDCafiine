@@ -292,7 +292,7 @@ u32 GetAddressOfFunction(const char * functionName,u32 library){
     }
     else if(library == LIB_VPADBASE){
         if(DEBUG_LOG_DYN){DEBUG_FUNCTION_LINE("FindExport of %s! From LIB_VPADBASE\n", functionName);}
-         if(vpadbase_handle == 0){DEBUG_FUNCTION_LINE("LIB_VPADBASE not acquired\n"); return 0;}
+        if(vpadbase_handle == 0){DEBUG_FUNCTION_LINE("LIB_VPADBASE not acquired\n"); return 0;}
         rpl_handle = vpadbase_handle;
     }
     else if(library == LIB_PROC_UI){

@@ -35,7 +35,6 @@ void FileReplacerUtils::DoAsyncThreadInternal(){
 
         callback = (void(*)(CustomAsyncParam *))message.message;
         CustomAsyncParam * param = (CustomAsyncParam *)message.data0;
-
         memcpy(&cParam,param,sizeof(CustomAsyncParam));
         free(param);
         if(DEBUG_LOG){DEBUG_FUNCTION_LINE("Calling callback at %08X, with %08X\n",callback,&cParam);}

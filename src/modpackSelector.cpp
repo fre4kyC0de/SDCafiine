@@ -134,7 +134,7 @@ void HandleMultiModPacks(u64 titleID/*,bool showMenu*/) {
         if(initScreen) {
             OSScreenClearBufferEx(0, 0);
             OSScreenClearBufferEx(1, 0);
-            console_print_pos(x_offset, -1, "                 -- SDCafiine %s by Maschell --",VERSION);
+            console_print_pos(x_offset, -1, "                  -- SDCafiine %s by Maschell --",VERSION);
             console_print_pos(x_offset, 1, "Select your options and press A to launch.");
             int y_offset = 3;
             int cur_ = 0;
