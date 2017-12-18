@@ -30,10 +30,40 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <wchar.h>
-#include <gctypes.h>
+#include "dynamic_libs/os_types.h"
+#include "StringTools.h"
 
-const char * fmt(const char * format, ...)
-{
+bool StringTools::EndsWith(const std::string& a, const std::string& b) {
+    if (b.size() > a.size()) return false;
+    return std::equal(a.begin() + a.size() - b.size(), a.end(), b.begin());
+}
+
+const char * StringTools::byte_to_binary(s32 x){
+    static char b[9];
+    b[0] = '\0';
+
+    s32 z;
+    for (z = 128; z > 0; z >>= 1)
+    {
+        strcat(b, ((x & z) == z) ? "1" : "0");
+    }
+
+    return b;
+}
+
+std::string StringTools::removeCharFromString(std::string& input,char toBeRemoved){
+    std::string output = input;
+    size_t position;
+    while(1){
+        position = output.find(toBeRemoved);
+        if(position == std::string::npos)
+            break;
+        output.erase(position, 1);
+    }
+    return output;
+}
+
+const char * StringTools::fmt(const char * format, ...){
 	static char strChar[512];
 	strChar[0] = 0;
 	char * tmp = NULL;
@@ -55,8 +85,7 @@ const char * fmt(const char * format, ...)
 	return NULL;
 }
 
-const wchar_t * wfmt(const char * format, ...)
-{
+const wchar_t * StringTools::wfmt(const char * format, ...){
 	static wchar_t strWChar[512];
 	strWChar[0] = 0;
 
@@ -73,7 +102,7 @@ const wchar_t * wfmt(const char * format, ...)
 	if((vasprintf(&tmp, format, va) >= 0) && tmp)
 	{
 		int	bt;
-		int strlength = strlen(tmp);
+		s32 strlength = strlen(tmp);
 		bt = mbstowcs(strWChar, tmp, (strlength < 512) ? strlength : 512 );
 		free(tmp);
 		tmp = 0;
@@ -92,9 +121,8 @@ const wchar_t * wfmt(const char * format, ...)
 	return NULL;
 }
 
-int strprintf(std::string &str, const char * format, ...)
-{
-	int result = 0;
+s32 StringTools::strprintf(std::string &str, const char * format, ...){
+	s32 result = 0;
 	char * tmp = NULL;
 
 	va_list va;
@@ -112,8 +140,7 @@ int strprintf(std::string &str, const char * format, ...)
 	return result;
 }
 
-std::string strfmt(const char * format, ...)
-{
+std::string StringTools::strfmt(const char * format, ...){
 	std::string str;
 	char * tmp = NULL;
 
@@ -131,8 +158,7 @@ std::string strfmt(const char * format, ...)
 	return str;
 }
 
-bool char2wchar_t(const char * strChar, wchar_t * dest)
-{
+bool StringTools::char2wchar_t(const char * strChar, wchar_t * dest){
 	if(!strChar || !dest)
 		return false;
 
@@ -146,8 +172,7 @@ bool char2wchar_t(const char * strChar, wchar_t * dest)
 	return false;
 }
 
-int strtokcmp(const char * string, const char * compare, const char * separator)
-{
+s32 StringTools::strtokcmp(const char * string, const char * compare, const char * separator){
 	if(!string || !compare)
 		return -1;
 
@@ -169,22 +194,7 @@ int strtokcmp(const char * string, const char * compare, const char * separator)
 	return -1;
 }
 
-bool startsWith(const char *pre, const char *str){
-    size_t lenpre = strlen(pre),
-           lenstr = strlen(str);
-    return lenstr < lenpre ? false : strncmp(pre, str, lenpre) == 0;
-}
-
-bool endsWith(char const * str, char const * suffix, int lenstr, int lensuf){
-    if( ! str && ! suffix ) return 1;
-    if( ! str || ! suffix ) return 0;
-    if( lenstr < 0 ) lenstr = strlen(str);
-    if( lensuf < 0 ) lensuf = strlen(suffix);
-    return strcmp(str + lenstr - lensuf, suffix) == 0;
-}
-
-int strextcmp(const char * string, const char * extension, char seperator)
-{
+s32 StringTools::strextcmp(const char * string, const char * extension, char seperator){
 	if(!string || !extension)
 		return -1;
 
@@ -196,12 +206,11 @@ int strextcmp(const char * string, const char * extension, char seperator)
 }
 
 
-std::vector<std::string> stringSplit(const std::string & inValue, const std::string & splitter)
-{
+std::vector<std::string> StringTools::stringSplit(const std::string & inValue, const std::string & splitter){
     std::string value = inValue;
     std::vector<std::string> result;
     while (true) {
-        unsigned int index = value.find(splitter);
+        u32 index = value.find(splitter);
         if (index == std::string::npos) {
             result.push_back(value);
             break;

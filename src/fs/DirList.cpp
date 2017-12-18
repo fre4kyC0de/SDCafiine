@@ -65,7 +65,7 @@ bool DirList::LoadPath(const std::string & folder, const char *filter, u32 flags
 	u32 length = folderpath.size();
 
 	//! clear path of double slashes
-	RemoveDoubleSlashs(folderpath);
+	StringTools::RemoveDoubleSlashs(folderpath);
 
 	//! remove last slash if exists
 	if(length > 0 && folderpath[length-1] == '/')
@@ -103,16 +103,17 @@ bool DirList::InternalLoadPath(std::string &folderpath)
 
 			if((Flags & CheckSubfolders) && (Depth > 0))
 			{
-				int length = folderpath.size();
-				if(length > 2 && folderpath[length-1] != '/')
-					folderpath += '/';
-				folderpath += filename;
+                s32 length = folderpath.size();
+                if(length > 2 && folderpath[length-1] != '/'){
+                    folderpath += '/';
+                }
+                folderpath += filename;
 
                 Depth--;
-				InternalLoadPath(folderpath);
-				folderpath.erase(length);
-				Depth++;
-			}
+                InternalLoadPath(folderpath);
+                folderpath.erase(length);
+                Depth++;
+            }
 
 			if(!(Flags & Dirs))
 				continue;
@@ -128,7 +129,7 @@ bool DirList::InternalLoadPath(std::string &folderpath)
 			if(!fileext)
 				continue;
 
-			if(strtokcmp(fileext, Filter, ",") == 0)
+			if(StringTools::strtokcmp(fileext, Filter, ",") == 0)
 				AddEntrie(folderpath, filename, isDir);
 		}
 		else
@@ -146,7 +147,7 @@ void DirList::AddEntrie(const std::string &filepath, const char * filename, bool
 	if(!filename)
 		return;
 
-	int pos = FileInfo.size();
+	s32 pos = FileInfo.size();
 
 	FileInfo.resize(pos+1);
 
@@ -165,20 +166,22 @@ void DirList::ClearList()
 {
 	for(u32 i = 0; i < FileInfo.size(); ++i)
 	{
-		if(FileInfo[i].FilePath)
+		if(FileInfo[i].FilePath){
 			free(FileInfo[i].FilePath);
+			FileInfo[i].FilePath = NULL;
+		}
 	}
 
 	FileInfo.clear();
 	std::vector<DirEntry>().swap(FileInfo);
 }
 
-const char * DirList::GetFilename(int ind) const
+const char * DirList::GetFilename(s32 ind) const
 {
 	if (!valid(ind))
 		return "";
 
-	return FullpathToFilename(FileInfo[ind].FilePath);
+	return StringTools::FullpathToFilename(FileInfo[ind].FilePath);
 }
 
 static bool SortCallback(const DirEntry & f1, const DirEntry & f2)
@@ -207,7 +210,7 @@ void DirList::SortList(bool (*SortFunc)(const DirEntry &a, const DirEntry &b))
 		std::sort(FileInfo.begin(), FileInfo.end(), SortFunc);
 }
 
-u64 DirList::GetFilesize(int index) const
+u64 DirList::GetFilesize(s32 index) const
 {
 	struct stat st;
 	const char *path = GetFilepath(index);
@@ -218,7 +221,7 @@ u64 DirList::GetFilesize(int index) const
 	return st.st_size;
 }
 
-int DirList::GetFileIndex(const char *filename) const
+s32 DirList::GetFileIndex(const char *filename) const
 {
 	if(!filename)
 		return -1;

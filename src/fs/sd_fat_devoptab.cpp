@@ -22,7 +22,6 @@
  * distribution.
  ***************************************************************************/
 #include <errno.h>
-#include <ogc/disc_io.h>
 #include <sys/statvfs.h>
 #include <sys/dirent.h>
 #include <string.h>
@@ -31,7 +30,11 @@
 #include <stdio.h>
 #include "dynamic_libs/fs_functions.h"
 #include "dynamic_libs/os_functions.h"
-#include "fs_utils.h"
+
+#include "disc_io.h"
+#include "FSOSUtils.h"
+#include "sd_fat_devoptab.h"
+#include "utils/StringTools.h"
 #include "utils/logger.h"
 
 #define FS_ALIGNMENT            0x40
@@ -791,7 +794,7 @@ static int sd_fat_dirnext_r (struct _reent *r, DIR_ITER *dirState, char *filenam
 
     OSLockMutex(dirIter->dev->pMutex);
 
-    FSDirEntry * dir_entry = malloc(sizeof(FSDirEntry));
+    FSDirEntry * dir_entry = (FSDirEntry *)malloc(sizeof(FSDirEntry));
 
     int result = FSReadDir(dirIter->dev->pClient, dirIter->dev->pCmd, dirIter->dirHandle, dir_entry, -1);
     if(result < 0)
@@ -1002,8 +1005,7 @@ static int sd_fat_remove_device (const char *path, void **pClient, void **pCmd, 
     return -1;
 }
 
-int mount_sd_fat(const char *path)
-{
+s32 mount_sd_fat(const char *path){
     int result = -1;
 
     // get command and client
@@ -1025,7 +1027,7 @@ int mount_sd_fat(const char *path)
 
     char *mountPath = NULL;
 
-    if(MountFS(pClient, pCmd, &mountPath) == 0) {
+    if(FSOSUtils::MountFS(pClient, pCmd, &mountPath) == 0) {
         result = sd_fat_add_device(path, mountPath, pClient, pCmd);
         free(mountPath);
     }
@@ -1033,8 +1035,7 @@ int mount_sd_fat(const char *path)
     return result;
 }
 
-int unmount_sd_fat(const char *path)
-{
+s32 unmount_sd_fat(const char *path){
     void *pClient = 0;
     void *pCmd = 0;
     char *mountPath = 0;
@@ -1042,7 +1043,7 @@ int unmount_sd_fat(const char *path)
     int result = sd_fat_remove_device(path, &pClient, &pCmd, &mountPath);
     if(result == 0)
     {
-        UmountFS(pClient, pCmd, mountPath);
+        FSOSUtils::UmountFS(pClient, pCmd, mountPath);
         FSDelClient(pClient);
         free(pClient);
         free(pCmd);
@@ -1052,10 +1053,10 @@ int unmount_sd_fat(const char *path)
     return result;
 }
 
-int mount_fake(){
+s32 mount_fake(){
     return sd_fat_add_device("fake", NULL, NULL, NULL);
 }
 
-int unmount_fake(){
+s32 unmount_fake(){
     return sd_fat_remove_device ("fake", NULL,NULL,NULL);
 }

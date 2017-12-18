@@ -1,7 +1,5 @@
 #ifndef RETAINS_VARS_H_
 #define RETAINS_VARS_H_
-#include <gctypes.h>
-#include "patcher/fs_function_patcher.h"
 #include "dynamic_libs/fs_defs.h"
 #include "dynamic_libs/os_types.h"
 
@@ -15,13 +13,7 @@ extern volatile u8 gSDInitDone;
 extern char gModFolder[FS_MAX_ENTNAME_SIZE];
 //extern char gLastMetaPath[FS_MAX_ENTNAME_SIZE];
 
-extern OSMessageQueue gFSQueue __attribute__((section(".data")));
-extern OSMessage gFSQueueMessages[FS_QUEUE_MESSAGE_COUNT] __attribute__((section(".data")));
-
-extern struct fs_patcher_utils fspatchervars __attribute__((section(".data")));
-extern FSAsyncResult gAsyncResultCache[ASYNC_RESULT_CACHE_SIZE];
-
-extern u8 gAsyncResultCacheLock;
-extern u8 gAsyncResultCacheCur;
+extern void * ntfs_mounts;
+extern int ntfs_mount_count;
 
 #endif // RETAINS_VARS_H_

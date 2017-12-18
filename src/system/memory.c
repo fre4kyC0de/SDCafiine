@@ -17,7 +17,6 @@
 #include <malloc.h>
 #include <string.h>
 #include "dynamic_libs/os_functions.h"
-#include "common/common.h"
 #include "memory.h"
 
 #define MEMORY_ARENA_1          0
@@ -116,8 +115,27 @@ size_t __wrap_malloc_usable_size(void *p)
 	return 0x7FFFFFFF;
 }
 
-void *__wrap_realloc(void *p, size_t size)
+void *__wrap_realloc(void *ptr, size_t size)
 {
+    void *newPtr;
+
+    if (!ptr) {
+        newPtr = __wrap_malloc(size);
+        if (!newPtr) { goto error; }
+    } else {
+        newPtr = __wrap_malloc(size);
+        if (!newPtr) { goto error; }
+
+        memcpy(newPtr, ptr, size);
+
+        __wrap_free(ptr);
+    }
+
+    return newPtr;
+error:
+    return NULL;
+}
+    /*
     void *new_ptr = __wrap_malloc(size);
 	if (new_ptr != 0)
 	{
@@ -125,7 +143,7 @@ void *__wrap_realloc(void *p, size_t size)
 		__wrap_free(p);
 	}
 	return new_ptr;
-}
+}*/
 
 //!-------------------------------------------------------------------------------------------
 //! reent versions

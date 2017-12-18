@@ -1,8 +1,8 @@
 #ifndef __KERNEL_DEFS_H_
 #define __KERNEL_DEFS_H_
 
-#include "types.h"
 #include "dynamic_libs/fs_functions.h"
+#include "dynamic_libs/os_types.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -69,25 +69,6 @@ typedef struct
 } __attribute__((packed)) CosAppXmlInfo;
 
 
-// original structure in the kernel that is originally 0x1270 long
-typedef struct
-{
-    uint64_t title_id;                  // title_id tag from app.xml
-    uint64_t unknown1;
-    uint64_t osversion;
-    uint64_t unknown2;
-    uint64_t common_save_size;
-    uint64_t account_save_size;
-    uint64_t unknown4;
-    uint64_t unknown5;
-    uint64_t unknown6; // companycode?
-    uint64_t unknown7;
-    char     unknown8[6];
-    char     product_code[22];
-    char     unknown9[44];
-    char     content_platform[3];
-} __attribute__((packed)) MetaXmlInfo;
-
 // Our own cos/app.xml struct which uses only uses as much memory as really needed, since many things are just zeros in the above structure
 // This structure is only 0x64 bytes long + RPX name length (dynamic up to 0x1000 theoretically)
 typedef struct
@@ -116,17 +97,6 @@ typedef struct
     uint32_t title_version;             // from app.xml, 0x32 on mii maker
     char rpx_name[FS_MAX_ENTNAME_SIZE]; // rpx name from cos.xml, length 256 as it can't get bigger from FS anyway
 } __attribute__((packed)) ReducedCosAppXmlInfo;
-
-typedef struct _bat_t
-{
-    u32 h;
-    u32 l;
-} bat_t;
-
-typedef struct _bat_table_t
-{
-    bat_t bat[8];
-} bat_table_t;
 
 #ifdef __cplusplus
 }

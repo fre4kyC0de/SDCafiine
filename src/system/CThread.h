@@ -17,7 +17,7 @@
 #ifndef CTHREAD_H_
 #define CTHREAD_H_
 
-#include <gctypes.h>
+
 #include <malloc.h>
 #include <unistd.h>
 #include "dynamic_libs/os_functions.h"
@@ -38,7 +38,7 @@ public:
 	    //! save attribute assignment
 	    iAttributes = iAttr;
 		//! allocate the thread
-		pThread = (OSThread*) memalign(8, sizeof(OSThread));
+		pThread = (OSThread*) memalign(8, 0x1000);
 		//! allocate the stack
 		pThreadStack = (u8 *) memalign(0x20, iStackSize);
         //! create the thread
@@ -72,7 +72,6 @@ public:
 	virtual bool isThreadSuspended(void) const { if(pThread) return OSIsThreadSuspended(pThread); return false; }
 	//! Check if thread is terminated
 	virtual bool isThreadTerminated(void) const { if(pThread) return OSIsThreadTerminated(pThread); return false; }
-	virtual void setThreadName(const char * name ) const { if(pThread && name) OSSetThreadName(pThread,name); }
 	//! Check if thread is running
 	virtual bool isThreadRunning(void) const { return !isThreadSuspended() && !isThreadRunning(); }
 	//! Shutdown thread
@@ -113,7 +112,7 @@ private:
 		return 0;
 	}
     s32 iAttributes;
-	OSThread * pThread;
+	OSThread *pThread;
 	u8 *pThreadStack;
 	Callback pCallback;
 	void *pCallbackArg;

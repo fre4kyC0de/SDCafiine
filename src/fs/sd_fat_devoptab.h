@@ -28,12 +28,11 @@
 extern "C" {
 #endif
 
+s32 mount_sd_fat(const char *path);
+s32 unmount_sd_fat(const char *path);
+s32 mount_fake();
+s32 unmount_fake();
 void deleteDevTabsNames();
-int mount_sd_fat(const char *path);
-int unmount_sd_fat(const char *path);
-int mount_fake();
-int unmount_fake();
-
 #ifdef __cplusplus
 }
 #endif

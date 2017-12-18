@@ -4,26 +4,37 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
+
 #include <string.h>
-#define __FILENAME__ (strrchr(__FILE__, '/') ? strrchr(__FILE__, '/') + 1 : __FILE__)
+
+void log_init_();
+//void log_deinit_(void);
+void log_print_(const char *str);
+void log_printf_(const char *format, ...);
+
+#ifdef __LOGGING__
+
+#define log_init() log_init_()
+//#define log_deinit() log_deinit_()
+#define log_print(str) log_print_(str)
+#define log_printf(FMT, ARGS...)  log_printf_(FMT, ## ARGS);
+
+#define __FILENAME_X__ (strrchr(__FILE__, '\\') ? strrchr(__FILE__, '\\') + 1 : __FILE__)
+#define __FILENAME__ (strrchr(__FILE__, '/') ? strrchr(__FILE__, '/') + 1 : __FILENAME_X__)
 
 #define DEBUG_FUNCTION_LINE(FMT, ARGS...)do { \
     log_printf("[%23s]%30s@L%04d: " FMT "",__FILENAME__,__FUNCTION__, __LINE__, ## ARGS); \
     } while (0)
 
-//#define DEBUG_LOGGER        1
-
-#ifdef DEBUG_LOGGER
-void log_init();
-#define log_deinit() // depreciated
-void log_print(const char *str);
-void log_printf(const char *format, ...);
 #else
+
 #define log_init()
-#define log_deinit()
+//#define log_deinit()
 #define log_print(x)
 #define log_printf(x, ...)
-#endif
+#define DEBUG_FUNCTION_LINE(FMT, ARGS...)
+
+#endif //__LOGGING__
 
 #ifdef __cplusplus
 }

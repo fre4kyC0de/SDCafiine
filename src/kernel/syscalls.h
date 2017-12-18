@@ -1,4 +1,3 @@
-
 #ifndef __SYSCALLS_H_
 #define __SYSCALLS_H_
 
@@ -6,18 +5,9 @@
 extern "C" {
 #endif
 
-#include <gctypes.h>
-#include "common/kernel_defs.h"
+#include "kernel_defs.h"
 
-void KernelSetupSyscalls(void);
-void KernelRestoreInstructions(void);
-
-void SC0x25_KernelCopyData(unsigned int addr, unsigned int src, unsigned int len);
-void SC0x36_KernelReadDBATs(bat_table_t * table);
-void SC0x37_KernelWriteDBATs(bat_table_t * table);
-
-uint32_t __attribute__ ((noinline)) kern_read(const void *addr);
-void __attribute__ ((noinline)) kern_write(void *addr, uint32_t value);
+void SC0x25_KernelCopyData(u32 addr, u32 src, u32 len);
 
 #ifdef __cplusplus
 }
