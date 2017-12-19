@@ -35,7 +35,6 @@ u32 acp_handle_internal = 0;
 u32 aoc_handle_internal = 0;
 u32 sound_handle_internal = 0;
 u32 sound_handle_internal_old = 0;
-u32 libcurl_handle_internal = 0;
 u32 gx2_handle_internal = 0;
 u32 nfp_handle_internal = 0;
 u32 nn_act_handle_internal = 0;
@@ -401,7 +400,6 @@ void resetLibs(){
     aoc_handle_internal = 0;
     sound_handle_internal = 0;
     sound_handle_internal_old = 0;
-    libcurl_handle_internal = 0;
     gx2_handle_internal = 0;
     nfp_handle_internal = 0;
     nn_act_handle_internal = 0;
